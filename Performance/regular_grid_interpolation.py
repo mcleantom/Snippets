@@ -2,6 +2,11 @@
 A more efficient method of regular grid interpolation than scipy. Works especially well for higher dimension
 interpolation
 """
+from __future__ import division
+from time import time
+import numpy as np
+from scipy.ndimage import map_coordinates, spline_filter
+
 
 class Intergrid:
     __doc__ = globals()["__doc__"]
