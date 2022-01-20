@@ -1,3 +1,5 @@
+__all__=['a_not_in_b']
+
 def a_not_in_b(A, B):
     """
     Find the value in A that is not in B
