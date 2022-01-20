@@ -7,7 +7,7 @@ def a_not_in_b(A, B):
         if item not in H:
             return item
 
-if __name__=="__main__":
+def main():
     # The set method in python uses a hash table for O(1) lookup speed versus a list which is O(N)
 
     import time
@@ -29,3 +29,6 @@ if __name__=="__main__":
     st = time.time()
     a_not_in_b(L, R)
     print("elapsed 2", time.time() - st)
+        
+if __name__=="__main__":
+    main()
