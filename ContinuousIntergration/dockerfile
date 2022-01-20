@@ -1,0 +1,23 @@
+FROM continuumio/miniconda3:latest
+
+RUN pip install pytest
+
+COPY WeatherRouting/requirements_conda_forge.txt weather_routing_requirements.txt
+RUN conda install -c conda-forge -y --file weather_routing_requirements.txt
+
+COPY requirements.txt requirements.txt
+RUN pip install -r requirements.txt
+
+COPY requirements-bat.txt requirements-bat.txt
+RUN pip install --extra-index-url http://pypi.bar.local --trusted-host pypi.bar.local -r requirements-bat.txt
+
+COPY WeatherRouting/WeatherRouting WeatherRouting
+
+COPY RoutingServer RoutingServer
+COPY docker_config.json docker_config.json
+
+RUN sed -i "s/_LOCAL_/${BUILD_VERSION}/g" RoutingServer/version.py
+RUN (py.test --junitxml results.xml RoutingServer || exit 0)
+
+EXPOSE 80
+CMD python -m RoutingServer -h 0.0.0.0 -p 80 --config docker_config.json
