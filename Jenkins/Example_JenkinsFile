@@ -1,0 +1,99 @@
+pipeline {
+    agent any
+
+    environment {
+        BRANCH_NAME = "${GIT_BRANCH}"
+        BUILD_NUMBER = "${BUILD_NUMBER}"
+        DEFAULT_TAG = "${BRANCH_NAME}_${BUILD_NUMBER}"
+        DOCKER_TAG_BASE = "bar_technologies/routing_server"
+        DOCKER_TAG_THIS = "${DOCKER_TAG_BASE}:${DEFAULT_TAG}".replace("/", ".")
+        DOCKER_TAG_LATEST_PUSH = "docker.bar.local:5000/${DOCKER_TAG_BASE}:latest"
+    }
+
+    stages {
+        stage('Tag build') {
+            steps {
+                echo "Tagging ${DEFAULT_TAG}"
+                sh '''
+                git config user.email jenkins@bar.local
+                git config --replace-all user.name 'Jenkins'
+                git tag -a ${BRANCH_NAME}_${BUILD_NUMBER} -m 'Jenkins build ${BUILD_NUMBER} on branch ${BRANCH_NAME}'
+                '''
+
+                sshagent(["Bitbucket"]) {
+                    echo "Pushing tags"
+                    sh "git push origin ${DEFAULT_TAG}"
+                }
+                sh '''
+                sed -i "s/_LOCAL_/${BUILD_NUMBER}/g" RoutingServer/version.py
+                python3 setup.py sdist
+                mv dist/*.tar.gz /var/pypi/RoutingServer
+                '''
+            }
+            post {
+                failure {
+                    sh "exit 1"
+                }
+            }
+        }
+
+        stage('Build docker image') {
+            steps {
+                sh 'docker build -t ${DOCKER_TAG_THIS} -f Dockerfile .'
+            }
+        }
+
+        stage('Check unit tests') {
+            steps {
+                sh 'docker run --rm --entrypoint cat ${DOCKER_TAG_THIS} results.xml > results.xml'
+                junit "results.xml"
+            }
+        }
+
+        stage('push docker image') {
+            when {
+                allOf {
+                    branch "dev"
+                    expression{currentBuild.currentResult == 'SUCCESS'}
+                }
+            }
+            steps {
+                sh """
+                docker image tag ${DOCKER_TAG_THIS} ${DOCKER_TAG_LATEST_PUSH}
+                docker image push ${DOCKER_TAG_LATEST_PUSH}
+                """
+            }
+        }
+
+        stage('deploy test site') {
+            when {
+                allOf {
+                    branch "dev"
+                    expression{currentBuild.currentResult == 'SUCCESS'}
+                }
+            }
+            steps {
+                sshagent(credentials: ['batperf_test']) {
+                    sh """
+                    ssh -o StrictHostKeyChecking=no test@192.168.63.30 \
+                    docker pull ${DOCKER_TAG_LATEST_PUSH} && \
+                    (docker rm -f routing_server || exit 0) && \
+                    docker run -d --name routing_server -p 5003:80 --restart unless-stopped \
+                            -v /mnt/BARAT_Data1/Weather_Files:/etc/lib/routing_server/weather_files \
+                            -l traefik.enable=true \
+                            -l "traefik.http.routers.routing_server.rule=Host(\\`routing_server.bar.local\\`)" \
+                            -l traefik.http.routers.routing_server.entrypoints=web \
+                            docker.bar.local:5000/bar_technologies/routing_server:latest
+
+                    """
+                }
+
+            }
+        }
+    }
+//     post {
+//         always {
+//              sh 'docker rmi ${DOCKER_TAG_THIS} ${DOCKER_TAG_LATEST_PUSH}'
+//         }
+//     }
+}
