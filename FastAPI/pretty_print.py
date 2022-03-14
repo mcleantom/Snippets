@@ -3,6 +3,14 @@ import json
 from fastapi.responses import Response
 
 class PrettyJSONResponse(Response):
+    """
+        Usage:
+
+        @app.get("/", response_class=PrettyJSONResponse)
+        def get_pretty_json_response():
+          some_json = {"name": "Tom", groups=["group 1", "group 2", "group 3"]}
+          return some_json
+    """
     media_type = "application/json"
 
     def render(self, content: Any) -> bytes:
@@ -15,11 +23,3 @@ class PrettyJSONResponse(Response):
         ).encode("utf-8")
 
 
-"""
-Usage:
-
-@app.get("/", response_class=PrettyJSONResponse)
-def get_pretty_json_response():
-  some_json = {"name": "Tom", groups=["group 1", "group 2", "group 3"]}
-  return some_json
-"""
