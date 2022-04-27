@@ -18,23 +18,30 @@ class Factory:
 
 # EXAMPLE
 if __name__ == "__main__":
-    class SaveManager(Factory):
+    import os
 
-        def save(self, type, file):
-            save_func = self.factory(type)
-            save_func(file)
+    class ReadManager(Factory):
+        @classmethod
+        def read(cls, file):
+            name, extension = os.path.splitext(f.name)
+            extension = extension.lstrip('.')
+            read_func = cls.factory(extension)
+            read_func(file)
 
+    @ReadManager.register("csv")
+    def read_csv(file):
+        print(f"Reading file as CSV")
 
-    @SaveManager.register("csv")
-    def save_csv(file):
-        print(f"Saving {file} as CSV")
+    @ReadManager.register("pdf")
+    def read_pdf(file):
+        print(f"Reading file as PDF")
+    
+    @ReadManager.register("txt")
+    def read_txt(file):
+        print(f"Reading file as txt")
 
+    with open("test_file.txt", "r") as f:
+        ReadManager.read(f)
 
-    @SaveManager.register("pdf")
-    def save_pdf(file):
-        print(f"Saving {file} as PDF")
-
-    save_manager = SaveManager()
-    file = "hello"
-    save_manager.save("csv", file)
-    save_manager.save("pdf", file)
+    with open("test.jpg", "r") as f:
+        ReadManager.read(f)
