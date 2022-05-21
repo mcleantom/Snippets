@@ -1,6 +1,7 @@
 from unittest import TestCase
 from .solution import Solution
 
+
 class TestSolution(TestCase):
 
     def test_two_sum(self):
