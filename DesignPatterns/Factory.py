@@ -16,6 +16,7 @@ class Factory:
             return deco_cls
         return deco
 
+
 # EXAMPLE
 if __name__ == "__main__":
     import os
