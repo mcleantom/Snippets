@@ -1,0 +1,5 @@
+cmake_minimum_required(VERSION 3.10.1)
+project(spam)
+set(src "spam")
+set(foo_src "spam/foo.c")
+add_library(foo SHARED ${foo_src})
