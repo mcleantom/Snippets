@@ -73,12 +73,19 @@ def sum(a, b):
 
     repeat until there is no carry.
     """
-    if b == 0:
-        return a
-    return sum(a^b, (a&b)<<1)
+    # 0b1111111111111111111111111111111
+    MAX = 0x7FFFFFFF
+    # 0b11111111111111111111111111111111
+    MASK = 0xFFFFFFFF
+
+    while b != 0:
+        a, b = (a ^ b) & MASK, ((a & b) << 1) & MASK
+
+    return a if a <= MAX else ~(a ^ MASK)
 
 
 assert sum(63, 63) == 63*2
+assert sum(1, -2) == 1-2
 
 
 def missing_number(nums):
@@ -180,37 +187,33 @@ def hamming_weight(n):
 assert hamming_weight(10) == count_one(10)
 
 
-def find_repeated_dna_sequence(s):
+def count_bits(N):
     """
-    Find all the 10-letter-long sequences that occur more than
-    once in a DNA molecule
+    Whole numbers can be represented by 2N (even) or 2N+1 (odd)
+    For a binary number, multiplying by 2 is the same as adding a 0 to the end.
+    Therefore, a number and its double will have the same number of 1s.
+    Doubling a number and adding 1 will increase the count by 1
 
-    A -> 0101 -> 1
-    C -> 0103 -> 3
-    G -> 0107 -> 7
-    T -> 0124 -> 4
-
-    We can use s[i]&7 to get the last digit
+    count_bits(N) = count_bits(2N)
+    count_bits(N)+1 = count_bits(2N+1)
     """
-    map = defaultdict(int)
-    v = []
-    t = 0
-    i = 0
-    ss = len(s)
+    n_bits = [0]*(N+1)
 
-    while i < 9:
-        i += 1
-        t = t << 3 | ord(s[i]) & 7
+    for i in range(N+1):
+        n_bits[i] = n_bits[i//2] + i % 2
 
-    while i << ss:
-        i += 1
-        t = t << 3 & 0x3FFFFFFF | ord(s[i])
-        index = t | ord(s[i]) & 7
-        map[index] += 1
-        if map[index] == 1:
-            v.append(s[i-10:i])
-
-    return v
+    return n_bits
 
 
-assert find_repeated_dna_sequence("AAAAACCCCCAAAAACCCCCCAAAAAGGGTTT") == ["AAAAACCCCC", "CCCCCAAAAA"]
+assert count_bits(5) == [0, 1, 1, 2, 1, 2]
+
+
+def reverseBits(n):
+    res = 0
+    for i in range(31, -1, -1):
+        if n & (1 << i):
+            res += 1 << (31 - i)
+    return res
+
+
+assert reverseBits(0b11111111111111111111111111111101) == 0b10111111111111111111111111111111
